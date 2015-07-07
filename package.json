@@ -1,0 +1,28 @@
+{
+  "name": "genre-sucker",
+  "version": "1.0.0",
+  "description": "reads genre and tags from multiple sources and writes in the mp3 files",
+  "main": "index.js",
+  "dependencies": {
+    "disconnect": ">= 0.6.3",
+    "lastfm": ">= 0.9.2",
+    "taglib": ">= 0.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sparkdj/genre-sucker.git"
+  },
+  "keywords": [
+    "genre",
+    "tags",
+    "mp3",
+    "music",
+    "nodejs"
+  ],
+  "author": "Spark",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sparkdj/genre-sucker/issues"
+  },
+  "homepage": "https://github.com/sparkdj/genre-sucker#readme"
+}
