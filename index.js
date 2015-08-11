@@ -26,6 +26,7 @@ resumo do funcionamento
 */
 
 require('./config.js');
+var Track = require('./track.js');
 
 options.init();
 console.info('---- ', options, '----');
@@ -75,6 +76,38 @@ var tracks = ["testsong.mp3","testsong2.mp3"];
 
 var sourcesSource = {mbid: null, lastfm: {track: null, artist: null, album: null}, discogs:{track:{}}};
 var sourcesTags = false;
+
+
+
+
+
+
+var readMusicFiles = function(){
+	var musicFiles = [];
+//	var musicFile = new Track();
+	for (var i = 0; i < tracks.length; i++) {
+		musicFiles[i] =  new Track(tracks[i]);
+		musicFiles[i].getFileInfo();
+		
+	}
+}
+readMusicFiles();
+
+
+function onReadMusicFile(err, tag, props){
+	console.dir(err ? err : {'tag': tag, 'audioProperties': props});
+	console.info("sourceTags: ",i, sourceTags);
+	// TODO: save image!
+	var request = lastfm.request("track.getTopTags", {
+		track: tag.title,
+		artist: tag.artist,
+		handlers: {
+			success: onGetLastFMInfo,
+			error: onConsultLastFMError
+		}
+	});
+}
+console.log(sourcesTags);
 
 /*
 // run them all individually
@@ -228,13 +261,18 @@ function onConsultDiscogs(err, data){
 	showTags();
 }
 
-
+/*
 var sourceTags = [];
 for (var i = 0; i < tracks.length; i++) {
 	sourceTags[i] = sourcesSource;
 	taglib.read(tracks[i], onReadMusicFile);
 }
 console.log(sourcesTags);
+*/
+
+
+
+
 
 /*
 var request = lastfm.request("artist.getTopTags", {
