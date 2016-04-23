@@ -1,3 +1,14 @@
+
+/*
+
+TODO 20160405
+- usar var match = require('match-files');
+- tentar limpar a lista de arquivos com esse match para pegar só as mp3
+- testar em um folder com subfolders e uns 20-30 arquivos
+- arrumar a leitura do lastfm
+
+ */
+
 /*
 var discogs = require('discogs');
 var client = discogs({api_key: 'srolJgNVDDStSniQPnTp'});
@@ -25,11 +36,17 @@ resumo do funcionamento
 
 */
 
+
+
+
 require('./config.js');
+var walkSync = require('walk-sync');
+var paths = walkSync('./', {directories: false, globs: ['**/*.mp3'] });
+
 var Track = require('./track.js');
 
 options.init();
-console.info('---- ', options, '----');
+// console.info('---- ', options, '----');
 
 
 var prefs = {
@@ -47,7 +64,7 @@ var prefs = {
 
 
 var showTags = function(){
-	console.log("tags: ", sourcesTags);
+	//console.log("tags: ", sourcesTags);
 };
 
 
@@ -80,19 +97,46 @@ var sourcesTags = false;
 
 
 
-
-
+GLOBAL.totalAsync = 0;
+var musicFiles = [];
 var readMusicFiles = function(){
-	var musicFiles = [];
+	
 //	var musicFile = new Track();
-	for (var i = 0; i < tracks.length; i++) {
-		musicFiles[i] =  new Track(tracks[i]);
+	for (var i = 0; i < paths.length; i++) {
+		musicFiles[i] =  new Track(paths[i], i, paths.length, totalAsync);
 		musicFiles[i].getFileInfo();
 		
 	}
 }
 readMusicFiles();
+//console.log('musicFiles', musicFiles);
 
+GLOBAL.finaliza = function(){
+	var jsonfile = require('jsonfile')
+	var file = 'data.json'
+	jsonfile.writeFile(file, musicFiles, function (err) {
+	  console.error(err)
+	});
+};
+
+// List all files in a directory in Node.js recursively in a synchronous fashion
+
+/*var walkSync = function(dir, filelist) {
+  var fs = fs || require('fs'),
+      files = fs.readdirSync(dir);
+  filelist = filelist || [];
+  files.forEach(function(file) {
+    if (fs.statSync(dir + '/' + file).isDirectory()) {
+      filelist = walkSync(dir + '/' + file, filelist);
+    }
+    else {
+      filelist.push(dir + '/' +file);
+    }
+  });
+  return filelist;
+};
+*/
+// console.log(walkSync('.'));
 
 function onReadMusicFile(err, tag, props){
 	console.dir(err ? err : {'tag': tag, 'audioProperties': props});
@@ -218,6 +262,8 @@ function onReadMusicFile(err, tag, props){
 function onGetLastFMInfo(data){
 	if(data.track.mbid){
 		console.log(' 1=== encontrou track getInfo MBID lastfm');
+		console.log(data);
+		console.log(' === encontrou track getInfo MBID lastfm ==1');
 		sourcesTags.mbid = data.track.mbid;
 	}
 
@@ -254,7 +300,8 @@ function onConsultLastFMError(err){
 }
 function onConsultDiscogs(err, data){
 	if(data.results.length > 0){
-		console.log(' 4=== encontrou discogs');
+		console.log(' 4=== encontrou discogs', data.results);
+
 		sourcesTags.discogs.track = data.results[0];
 	}
 

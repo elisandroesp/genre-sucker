@@ -17,8 +17,13 @@ var db = new Discogs2({
 	consumerSecret: 'RqpjuDxPGPIZerYleQeyrbWkTCZurEgG'
 }).database();
 
+var prompt = require('prompt');
+prompt.start();
 
-function Track(filename) {
+
+function Track(filename, seq, total, totalAsync) {
+	this.seq = seq;
+	this.total = total;
 	this.filename = filename || "";
 	this.title; 
 	this.year;
@@ -27,15 +32,17 @@ function Track(filename) {
 	this.comments = "";
 	this.filetag = {};
 	this.fileprops = {};
-	this.discogsResults = {};
+	//this.discogsResults = {};
+	this.allResults = {};
 	this.mbid = null;
+	this.tagObject = {};
 
 }
 
 Track.prototype.getFileInfo = function() {
 //	console.log('x', this, this.filename);
+	taglib.tag(this.filename, this.getLastfmInfo.bind(this));
 
-	taglib.read(this.filename, this.getLastfmInfo.bind(this));
 	// body...
 };
 Track.prototype.set = function() {
@@ -46,8 +53,13 @@ Track.prototype.getLastfmInfo = function(err, tag, props){
 	//console.dir({'tag': tag, 'audioProperties': props});
 	this.filetag = tag;
 	this.fileprops = props;
+	this.allResults['tags'] = tag;
+	this.allResults['props'] = props;
 
-	console.log('y', this);
+//	tag.comment = "teste2";
+//	this.filetag.saveSync();
+//	console.log('y', this);
+	GLOBAL.totalAsync++;
 	var request = lastfm.request("track.getInfo", {
 		track: this.filetag.title,
 		artist: this.filetag.artist,
@@ -59,9 +71,12 @@ Track.prototype.getLastfmInfo = function(err, tag, props){
 };
 
 Track.prototype.getLastfmTags = function(data) {
+	GLOBAL.totalAsync--;
+	GLOBAL.totalAsync++;
 	if(data.track.mbid){
-		console.log(' 1=== encontrou track getInfo MBID lastfm');
+//		console.log(' 1=== encontrou track getInfo MBID lastfm');
 		this.mbid = data.track.mbid;
+		this.allResults['lastfm'] = data;
 	}
 	var request = lastfm.request("track.getTopTags", {
 		track: this.filetag.title,
@@ -72,17 +87,63 @@ Track.prototype.getLastfmTags = function(data) {
 		}
 	});
 };
+Track.prototype.onConsultLastFMError = function(err) {
+//	console.log('====error: ', err, this);
+	GLOBAL.totalAsync--;
+}
 
+// TODO: permitir ao usuário escolher qual release
 Track.prototype.getDiscogsInfo = function(data) {
 	var self = this;
+	this.allResults['lastfmTopTags'] = data;
+	GLOBAL.totalAsync--;
+	GLOBAL.totalAsync++;
+/*
+	var schema = {
+	    properties: {
+			escolha: {
+				type: 'integer',
+				message: 'Entre com um número',
+			//	required: true,
+				default: 0
+			}
+		}
+	};
+*/
 	db.search("", { artist: this.filetag.artist, track: this.filetag.title}, function(err, data){
 		// console.log(err, data);
-		
+		if(err){
+			console.log('discogs error: ', err);
+		}
 		if(data.results.length > 0){
-			console.log(' 4=== encontrou discogs');
-			console.info(data.results[0].style);
-			console.info(data.results[0]);
-			this.discogsResults = data;
+	//		console.log(' 4=== encontrou discogs');
+	//		console.info(data.results[0].style);
+			
+			/*
+			var tr = [];
+			if(data.results.length > 0){
+				for(var j=0;j<data.results.length;j++){
+					tr.push({escolha: j, genre:data.results[j].genre, style:data.results[j].style,  title:data.results[j].title });	
+				}
+			}
+			console.info("DISCOGSSSS ", tr);
+*/
+			/*
+
+			prompt.get(schema, function (err, result) {
+			    //
+			    // Log the results.
+			    //
+			    console.log('Command-line input received:');
+			    console.log('  escolha feita: ' + result.escolha);
+			    self.escolha = result.escolha;
+			    
+			  });
+			*/
+
+
+
+			self.allResults['discogs'] = data.results;
 
 /*
 { style: [ 'Hi NRG' ],
@@ -106,21 +167,44 @@ Track.prototype.getDiscogsInfo = function(data) {
   id: 297751 }
 */
 		}
-		self.chooseInfo();
+	
+// só vou escrever no final! 
+//		self.chooseInfo();
+	
+//	console.log(' <--- pegou pegou --->');
+	self.writeInfo();
+
+
 	});
 };
 
 Track.prototype.chooseInfo = function() {
-	console.log(' <--- choooose --->', this);
-	this.writeInfo();
+	//console.log(' <--- choooose --->');
+	var dr = this.discogsResults[0];
+	if(dr.length > 0){
+		var t = 'g:'+ dr.genre.join('g:') +' - s:'+ dr.style.join(', s:');
+	//	console.log('tag: ', tag)
+		this.filetag.genre = t;
+		this.filetag.year = dr.year || null;
+	//	this.filetag.xxx = "ok";
+		this.filetag.saveSync();
+		this.writeInfo();
+	}
 };
+
+
+
 
 Track.prototype.writeInfo = function() {
-	console.log(' <--- É O FIM --->', this);
+	// console.log(' <--- É O FIM --->');
+	GLOBAL.totalAsync--;
+	if(GLOBAL.totalAsync == 0){
+		console.log('terminou');
+		GLOBAL.finaliza();
+	}
+
 };
 
-Track.prototype.onConsultLastFMError = function(err) {
-	console.log("Error: " , err);
-};
+
 
 module.exports = Track;

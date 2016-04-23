@@ -6,7 +6,10 @@
   "dependencies": {
     "disconnect": ">= 0.6.3",
     "lastfm": ">= 0.9.2",
-    "taglib": ">= 0.8.1"
+    "taglib": ">= 0.8.1",
+    "walk-sync": "^0.2.6", 
+    "prompt": ">= 0.1",
+    "jsonfile": ">= 2"
   },
   "repository": {
     "type": "git",
